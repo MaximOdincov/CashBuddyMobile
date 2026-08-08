@@ -1,9 +1,8 @@
 name: iOS Build (Simulator)
 
-# Собирает iOS-приложение под симулятор на Apple Silicon runner.
-# Артефакт (.zip с .app) скачивается и запускается локально в Simulator.app.
-#
-# Запуск: вручную (кнопка Run workflow) или автоматически при пуше в ветки.
+# Собирает iOS-приложение под симулятор на Apple Silicon runner (macos-26, Xcode 26).
+# Матрица: arm64 (для Apple Silicon маков) и x64 (для Intel маков).
+# Артефакты (.zip с .app) скачиваются и запускаются локально в Simulator.app.
 
 on:
   workflow_dispatch:      # ручной запуск
@@ -13,11 +12,24 @@ on:
       - 'shared/**'
       - 'iosApp/**'
       - '.github/workflows/ios-build.yml'
+      - 'shared/build.gradle.kts'
 
 jobs:
   build-ios-simulator:
     runs-on: macos-26      # macOS Tahoe, Xcode 26.4+ (читает pbxproj objectVersion 77)
     timeout-minutes: 60
+    strategy:
+      fail-fast: false     # если x64 упадёт, arm64 всё равно соберётся
+      matrix:
+        include:
+          - arch: arm64
+            gradle_target: linkDebugFrameworkIosSimulatorArm64
+            artifact_name: CashBuddy-iOS-arm64
+            desc: "Apple Silicon (M1/M2/M3)"
+          - arch: x86_64
+            gradle_target: linkDebugFrameworkIosX64
+            artifact_name: CashBuddy-iOS-x64
+            desc: "Intel"
 
     steps:
       - name: Checkout
@@ -38,30 +50,30 @@ jobs:
           path: |
             ~/.konan
             ~/.gradle/caches
-          key: ${{ runner.os }}-konan-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
-          restore-keys: ${{ runner.os }}-konan-
+          key: ${{ runner.os }}-konan-${{ matrix.arch }}-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
+          restore-keys: ${{ runner.os }}-konan-${{ matrix.arch }}-
 
       - name: Select latest Xcode
         run: |
-          # находим самую свежую версию Xcode из установленных
           LATEST=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
           echo "Selected: $LATEST"
           sudo xcode-select -s "$LATEST/Contents/Developer"
           xcrun xcodebuild -version
 
-      - name: Show environment
+      - name: Show environment (${{ matrix.desc }})
         run: |
+          echo "Building for arch: ${{ matrix.arch }}"
           uname -m
           xcrun xcodebuild -version
           sw_vers
 
-      - name: Build Shared framework (IosSimulatorArm64)
+      - name: Build Shared framework (${{ matrix.gradle_target }})
         run: |
           # очищаем кеш Kotlin/Native, чтобы исключить повреждённые klib
           rm -rf ~/.konan/klib ~/.gradle/caches/transforms ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.androidx.navigation
-          ./gradlew :shared:clean :shared:linkDebugFrameworkIosSimulatorArm64 --no-daemon --stacktrace
+          ./gradlew :shared:clean :shared:${{ matrix.gradle_target }} --no-daemon --stacktrace
 
-      - name: Build iOS app for Simulator
+      - name: Build iOS app for Simulator (${{ matrix.arch }})
         run: |
           xcrun xcodebuild \
             -project iosApp/iosApp.xcodeproj \
@@ -74,9 +86,15 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
-            ARCHS=arm64 \
+            ARCHS=${{ matrix.arch }} \
             ONLY_ACTIVE_ARCH=YES \
             build
+
+      - name: Verify built binary architecture
+        run: |
+          APP_PATH=$(find build/DerivedData/Build/Products -name "CashBuddy.app" -type d | head -1)
+          echo "App: $APP_PATH"
+          lipo -archs "$APP_PATH/CashBuddy" || file "$APP_PATH/CashBuddy"
 
       - name: Locate .app and zip it
         run: |
@@ -86,13 +104,13 @@ jobs:
           mkdir -p artifact
           cp -R "$APP_PATH" artifact/
           cd artifact
-          zip -ry ../CashBuddy-iOS-Simulator.app.zip CashBuddy.app
+          zip -ry ../${{ matrix.artifact_name }}.app.zip CashBuddy.app
           cd ..
           ls -la artifact/
 
-      - name: Upload artifact
+      - name: Upload artifact (${{ matrix.desc }})
         uses: actions/upload-artifact@v4
         with:
-          name: CashBuddy-iOS-Simulator
-          path: CashBuddy-iOS-Simulator.app.zip
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}.app.zip
           retention-days: 30

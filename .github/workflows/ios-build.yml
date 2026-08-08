@@ -51,7 +51,10 @@ jobs:
           sw_vers
 
       - name: Build Shared framework (IosSimulatorArm64)
-        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64 --no-daemon --stacktrace
+        run: |
+          # очищаем кеш Kotlin/Native, чтобы исключить повреждённые klib
+          rm -rf ~/.konan/klib ~/.gradle/caches/transforms ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.androidx.navigation
+          ./gradlew :shared:clean :shared:linkDebugFrameworkIosSimulatorArm64 --no-daemon --stacktrace
 
       - name: List available simulators
         id: sims

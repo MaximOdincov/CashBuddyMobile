@@ -63,8 +63,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
 
-            // Navigation
-            implementation(libs.androidx.navigation.compose)
+            // Navigation — убрали (state-based навигация, обход klib-ошибки на Kotlin 2.4)
 
             // Network: Ktor
             implementation(libs.ktor.core)

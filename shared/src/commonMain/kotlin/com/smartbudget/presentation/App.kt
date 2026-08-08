@@ -3,14 +3,9 @@ package com.smartbudget.presentation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.compose.ui.Modifier
 import com.smartbudget.core.storage.AppSettings
-import com.smartbudget.presentation.navigation.Routes
+import com.smartbudget.presentation.navigation.BottomTab
 import com.smartbudget.presentation.navigation.bottomTabs
 import com.smartbudget.presentation.screens.auth.LoginScreen
 import com.smartbudget.presentation.screens.budget.BudgetScreen
@@ -25,35 +20,52 @@ import com.smartbudget.presentation.screens.transactions.TransactionsScreen
 import com.smartbudget.presentation.theme.CashBuddyTheme
 import org.koin.compose.koinInject
 
+/**
+ * Простые экраны приложения (state-based навигация).
+ * Заменяет navigation-compose, которая вызывает klib-ошибки на Kotlin 2.4.10.
+ */
+sealed class Screen {
+    data object Budget : Screen()
+    data object Chat : Screen()
+    data object More : Screen()
+    data object Goals : Screen()
+    data object Notifications : Screen()
+    data object Transactions : Screen()
+    data object Settings : Screen()
+    data object AddTransaction : Screen()
+    data class CategoryDetail(val categoryId: Long) : Screen()
+}
+
 @Composable
 fun App() {
     val appSettings: AppSettings = koinInject()
     var themeMode by remember { mutableStateOf(appSettings.themeMode) }
     var authed by remember { mutableStateOf(appSettings.isLoggedIn) }
 
-    CashBuddyTheme(themeMode = themeMode) {
-        val navController = rememberNavController()
+    // Стек навигации: последний элемент = текущий экран
+    var backStack by remember { mutableStateOf<List<Screen>>(listOf(Screen.Budget)) }
+    val current: Screen = backStack.last()
+    fun navigate(screen: Screen) { backStack = backStack + screen }
+    fun pop() { if (backStack.size > 1) backStack = backStack.dropLast(1) }
+    fun switchTab(tab: Screen) { backStack = listOf(tab) }
 
-        // отслеживаем текущий маршрут для показа BottomBar
-        val navBackStack by navController.currentBackStackEntryAsState()
-        val currentRoute = navBackStack?.destination?.route
-        val showBottomBar = currentRoute in bottomTabs.map { it.route }
+    CashBuddyTheme(themeMode = themeMode) {
+        val isMainScreen = current in listOf(Screen.Budget, Screen.Chat, Screen.More)
 
         Scaffold(
             bottomBar = {
-                if (showBottomBar && authed) {
+                if (isMainScreen && authed) {
                     NavigationBar {
                         bottomTabs.forEach { tab ->
-                            val selected = currentRoute == tab.route
+                            val tabScreen = when (tab.route) {
+                                "budget" -> Screen.Budget
+                                "chat" -> Screen.Chat
+                                else -> Screen.More
+                            }
+                            val selected = current == tabScreen
                             NavigationBarItem(
                                 selected = selected,
-                                onClick = {
-                                    navController.navigate(tab.route) {
-                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
+                                onClick = { switchTab(tabScreen) },
                                 icon = { Text(tab.icon, style = MaterialTheme.typography.titleMedium) },
                                 label = { Text(tab.label) }
                             )
@@ -63,53 +75,28 @@ fun App() {
             }
         ) { padding ->
             if (!authed) {
-                LoginScreen(onLoggedIn = { authed = true })
+                LoginScreen(onLoggedIn = { authed = true; backStack = listOf(Screen.Budget) })
             } else {
-                NavHost(
-                    navController = navController,
-                    startDestination = Routes.BUDGET,
-                    modifier = androidx.compose.ui.Modifier.padding(padding)
-                ) {
-                    // --- главные вкладки ---
-                    composable(Routes.BUDGET) {
-                        BudgetScreen(
-                            onCategoryClick = { id -> navController.navigate(Routes.categoryDetail(id)) },
-                            onAddTransaction = { navController.navigate(Routes.ADD_TX) }
+                androidx.compose.foundation.layout.Box(Modifier.padding(padding)) {
+                    when (val s = current) {
+                        Screen.Budget -> BudgetScreen(
+                            onCategoryClick = { id -> navigate(Screen.CategoryDetail(id)) },
+                            onAddTransaction = { navigate(Screen.AddTransaction) }
                         )
-                    }
-                    composable(Routes.CHAT) { ChatScreen() }
-                    composable(Routes.MORE) {
-                        MoreScreen(
-                            onGoals = { navController.navigate(Routes.GOALS) },
-                            onNotifications = { navController.navigate(Routes.NOTIFICATIONS) },
-                            onTransactions = { navController.navigate(Routes.TRANSACTIONS) },
-                            onSettings = { navController.navigate(Routes.SETTINGS) },
-                            onLogout = {
-                                authed = false
-                                navController.navigate(Routes.LOGIN) { popUpTo(0) }
-                            }
+                        Screen.Chat -> ChatScreen()
+                        Screen.More -> MoreScreen(
+                            onGoals = { navigate(Screen.Goals) },
+                            onNotifications = { navigate(Screen.Notifications) },
+                            onTransactions = { navigate(Screen.Transactions) },
+                            onSettings = { navigate(Screen.Settings) },
+                            onLogout = { authed = false }
                         )
-                    }
-
-                    // --- доп. экраны ---
-                    composable(
-                        route = Routes.CATEGORY_DETAIL,
-                        arguments = listOf(navArgument("categoryId") { type = NavType.LongType })
-                    ) { entry ->
-                        // Читаем Long-аргумент через NavType (KMP-совместимо: SavedState API)
-                        val categoryId = entry.arguments?.let { args ->
-                            NavType.LongType.get(args, "categoryId")
-                        } ?: 0L
-                        CategoryDetailScreen(categoryId = categoryId)
-                    }
-                    composable(Routes.TRANSACTIONS) { TransactionsScreen() }
-                    composable(Routes.ADD_TX) {
-                        AddTransactionScreen(onDone = { navController.popBackStack() })
-                    }
-                    composable(Routes.GOALS) { GoalsScreen() }
-                    composable(Routes.NOTIFICATIONS) { NotificationsScreen() }
-                    composable(Routes.SETTINGS) {
-                        SettingsScreen(onThemeChanged = { themeMode = appSettings.themeMode })
+                        Screen.Goals -> GoalsScreen()
+                        Screen.Notifications -> NotificationsScreen()
+                        Screen.Transactions -> TransactionsScreen()
+                        Screen.Settings -> SettingsScreen(onThemeChanged = { themeMode = appSettings.themeMode })
+                        Screen.AddTransaction -> AddTransactionScreen(onDone = { pop() })
+                        is Screen.CategoryDetail -> CategoryDetailScreen(categoryId = s.categoryId)
                     }
                 }
             }

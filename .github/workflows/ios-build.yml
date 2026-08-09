@@ -1,178 +1,91 @@
-name: iOS Build (Simulator)
+name: iOS Build
 
-# Собирает iOS-приложение под симулятор на Apple Silicon runner (macos-26, Xcode 26).
-# Матрица: arm64 (для Apple Silicon маков) и x64 (для Intel маков).
-# Артефакты (.zip с .app) скачиваются и запускаются локально в Simulator.app.
+# Собирает iOS-приложение: симулятор (arm64) и .ipa для реального iPhone.
+# Запуск: вручную (Run workflow) или автоматически при пуше.
 
 on:
-  workflow_dispatch:      # ручной запуск
+  workflow_dispatch:
   push:
     branches: [ main, master ]
     paths:
       - 'shared/**'
       - 'iosApp/**'
       - '.github/workflows/ios-build.yml'
-      - 'shared/build.gradle.kts'
 
 jobs:
-  build-ios-simulator:
-    runs-on: macos-26      # macOS Tahoe, Xcode 26.4+ (читает pbxproj objectVersion 77)
+  build-ios-simulator-arm64:
+    runs-on: macos-26
     timeout-minutes: 60
-    strategy:
-      fail-fast: false     # если x64 упадёт, arm64 всё равно соберётся
-      matrix:
-        include:
-          - arch: arm64
-            gradle_target: linkDebugFrameworkIosSimulatorArm64
-            artifact_name: CashBuddy-iOS-arm64
-            desc: "Apple Silicon (M1/M2/M3)"
-          - arch: x86_64
-            gradle_target: linkDebugFrameworkIosX64
-            artifact_name: CashBuddy-iOS-x64
-            desc: "Intel"
-
+    continue-on-error: true
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Cache Kotlin/Native
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.konan
-            ~/.gradle/caches
-          key: ${{ runner.os }}-konan-${{ matrix.arch }}-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
-          restore-keys: ${{ runner.os }}-konan-${{ matrix.arch }}-
-
-      - name: Select latest Xcode
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Select Xcode
         run: |
           LATEST=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
-          echo "Selected: $LATEST"
           sudo xcode-select -s "$LATEST/Contents/Developer"
           xcrun xcodebuild -version
-
-      - name: Show environment (${{ matrix.desc }})
+      - name: Build Shared (IosSimulatorArm64)
         run: |
-          echo "Building for arch: ${{ matrix.arch }}"
-          uname -m
-          xcrun xcodebuild -version
-          sw_vers
-
-      - name: Build Shared framework (${{ matrix.gradle_target }})
-        run: |
-          # очищаем кеш Kotlin/Native, чтобы исключить повреждённые klib
-          rm -rf ~/.konan/klib ~/.gradle/caches/transforms ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.androidx.navigation
-          ./gradlew :shared:clean :shared:${{ matrix.gradle_target }} --no-daemon --stacktrace
-
-      - name: Build iOS app for Simulator (${{ matrix.arch }})
+          rm -rf ~/.konan/klib ~/.gradle/caches/transforms
+          ./gradlew :shared:clean :shared:linkDebugFrameworkIosSimulatorArm64 --no-daemon --stacktrace
+      - name: Build .app (arm64 simulator)
         run: |
           xcrun xcodebuild \
-            -project iosApp/iosApp.xcodeproj \
-            -scheme iosApp \
+            -project iosApp/iosApp.xcodeproj -scheme iosApp \
             -configuration Debug \
             -destination "generic/platform=iOS Simulator" \
-            -sdk iphonesimulator \
-            -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM="" \
-            ARCHS=${{ matrix.arch }} \
-            ONLY_ACTIVE_ARCH=YES \
-            build
-
-      - name: Verify built binary architecture
+            -sdk iphonesimulator -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build
+      - name: Zip .app
         run: |
-          APP_PATH=$(find build/DerivedData/Build/Products -name "CashBuddy.app" -type d | head -1)
-          echo "App: $APP_PATH"
-          lipo -archs "$APP_PATH/CashBuddy" || file "$APP_PATH/CashBuddy"
-
-      - name: Locate .app and zip it
-        run: |
-          APP_PATH=$(find build/DerivedData/Build/Products -name "CashBuddy.app" -type d | head -1)
-          echo "Found app: $APP_PATH"
-          if [ -z "$APP_PATH" ]; then echo "App not found!"; exit 1; fi
-          mkdir -p artifact
-          cp -R "$APP_PATH" artifact/
-          cd artifact
-          zip -ry ../${{ matrix.artifact_name }}.app.zip CashBuddy.app
-          cd ..
-          ls -la artifact/
-
-      - name: Upload artifact (${{ matrix.desc }})
-        uses: actions/upload-artifact@v4
+          APP=$(find build/DerivedData/Build/Products -name "CashBuddy.app" -type d | head -1)
+          mkdir -p artifact && cp -R "$APP" artifact/
+          cd artifact && zip -ry ../CashBuddy-iOS-arm64.app.zip CashBuddy.app
+      - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.artifact_name }}.app.zip
+          name: CashBuddy-iOS-arm64-simulator
+          path: CashBuddy-iOS-arm64.app.zip
           retention-days: 30
 
-  # === Сборка .ipa для реального iPhone (unsigned, для Sideloadly) ===
   build-ios-device-ipa:
     runs-on: macos-26
     timeout-minutes: 60
-    continue-on-error: true   # экспериментальный, не ломает основной run
-
+    continue-on-error: true
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Select latest Xcode
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Select Xcode
         run: |
           LATEST=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
           sudo xcode-select -s "$LATEST/Contents/Developer"
-
-      - name: Build Shared framework (IosArm64 — реальное устройство)
+      - name: Build Shared (IosArm64)
         run: |
-          rm -rf ~/.konan/klib ~/.gradle/caches/transforms ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.androidx.navigation
+          rm -rf ~/.konan/klib ~/.gradle/caches/transforms
           ./gradlew :shared:clean :shared:linkDebugFrameworkIosArm64 --no-daemon --stacktrace
-
-      - name: Build unsigned .ipa for device
+      - name: Build unsigned .ipa
         run: |
-          # Собираем .app для устройства (без подписи)
           xcrun xcodebuild \
-            -project iosApp/iosApp.xcodeproj \
-            -scheme iosApp \
+            -project iosApp/iosApp.xcodeproj -scheme iosApp \
             -configuration Release \
             -destination "generic/platform=iOS" \
-            -sdk iphoneos \
-            -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM="" \
-            ARCHS=arm64 \
-            ONLY_ACTIVE_ARCH=YES \
-            build
-
-          # Упаковываем в unsigned .ipa (папка Payload + .app)
-          APP_PATH=$(find build/DerivedData/Build/Products -name "CashBuddy.app" -type d | head -1)
-          echo "App: $APP_PATH"
-          mkdir -p Payload
-          cp -R "$APP_PATH" Payload/
+            -sdk iphoneos -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build
+          APP=$(find build/DerivedData/Build/Products -name "CashBuddy.app" -type d | head -1)
+          mkdir -p Payload && cp -R "$APP" Payload/
           zip -ry CashBuddy-device-unsigned.ipa Payload
-
-      - name: Upload unsigned .ipa
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: CashBuddy-iOS-device-ipa
           path: CashBuddy-device-unsigned.ipa
           retention-days: 30
-

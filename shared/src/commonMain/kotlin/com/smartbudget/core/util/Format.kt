@@ -1,8 +1,6 @@
 package com.smartbudget.core.util
 
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import com.smartbudget.core.platform.currentHourOfDay
 
 /**
  * Форматирование денег: 18450.0 → "18 450 ₽".
@@ -50,13 +48,6 @@ fun greeting(): String {
         else -> "Доброй ночи"
     }
 }
-
-/** Текущий час (0..23) в системной таймзоне. */
-fun currentHourOfDay(): Int = try {
-    Clock.System.now()
-        .toLocalDateTime(TimeZone.currentSystemDefault())
-        .hour
-} catch (_: Exception) { 12 }
 
 /** Название месяца по строке периода "YYYY-MM" → "Август". */
 fun monthName(period: String): String {

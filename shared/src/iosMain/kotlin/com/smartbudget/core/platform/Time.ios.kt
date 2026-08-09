@@ -1,12 +1,11 @@
 package com.smartbudget.core.platform
 
-import platform.Foundation.NSCalendar
 import platform.Foundation.NSDate
-import platform.Foundation.NSHourCalendarUnit
-import platform.Foundation.currentCalendar
+import platform.Foundation.NSDateFormatter
+import platform.Foundation.NSDateFormatterFullStyle
 
 actual fun currentHourOfDay(): Int = try {
-    val components = NSCalendar.currentCalendar()
-        .components(NSHourCalendarUnit, fromDate = NSDate())
-    components.hour.toInt()
+    val formatter = NSDateFormatter()
+    formatter.setDateFormat("HH")
+    formatter.stringFromDate(NSDate()).toInt()
 } catch (_: Exception) { 12 }

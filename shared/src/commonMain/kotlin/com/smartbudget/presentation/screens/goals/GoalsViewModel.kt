@@ -29,10 +29,19 @@ class GoalsViewModel(
         }
     }
 
-    fun contribute(goalId: Long, amount: String) {
+    fun contribute(goalId: Long, amount: Double) {
         viewModelScope.launch {
             try {
                 goalsRepository.contribute(goalId, amount)
+                load()
+            } catch (_: Exception) { }
+        }
+    }
+
+    fun create(title: String, targetAmount: Double) {
+        viewModelScope.launch {
+            try {
+                goalsRepository.create(title, targetAmount)
                 load()
             } catch (_: Exception) { }
         }

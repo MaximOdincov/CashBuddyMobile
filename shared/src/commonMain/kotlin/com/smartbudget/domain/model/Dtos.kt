@@ -24,7 +24,7 @@ data class AuthResponse(
 data class MeResponse(
     val userId: Long,
     val username: String,
-    val monthlyIncome: String,
+    val monthlyIncome: Double,
     val currency: String,
     val shareCode: String
 )
@@ -39,10 +39,10 @@ data class RegisterRequest(
 
 @Serializable
 data class BudgetOverview(
-    val monthlyIncome: String,
+    val monthlyIncome: Double,
     val currency: String,
     val periodMonth: String,
-    val totalPercent: String,
+    val totalPercent: Double,
     val allocations: List<BudgetItem>
 )
 
@@ -53,11 +53,11 @@ data class BudgetItem(
     val icon: String,
     val color: String,
     val isSavings: Boolean,
-    val percent: String,
-    val limitAmount: String,
-    val spent: String,
-    val remaining: String,
-    val pct: String
+    val percent: Double,
+    val limitAmount: Double,
+    val spent: Double,
+    val remaining: Double,
+    val pct: Double
 )
 
 @Serializable
@@ -70,7 +70,7 @@ data class CategoryView(
 )
 
 @Serializable
-data class IncomeRequest(val monthlyIncome: String)
+data class IncomeRequest(val monthlyIncome: Double)
 
 @Serializable
 data class UpdateAllocationsRequest(val allocations: List<AllocationItem>)
@@ -78,7 +78,7 @@ data class UpdateAllocationsRequest(val allocations: List<AllocationItem>)
 @Serializable
 data class AllocationItem(
     val categoryId: Long,
-    val percent: String
+    val percent: Double
 )
 
 // ============ Transactions ============
@@ -86,8 +86,8 @@ data class AllocationItem(
 @Serializable
 data class TransactionDto(
     val id: Long? = null,
-    val amount: String,
-    val merchant: String,
+    val amount: Double = 0.0,
+    val merchant: String = "",
     val mcc: String? = null,
     val categoryName: String? = null,
     val description: String? = null,
@@ -97,7 +97,7 @@ data class TransactionDto(
 
 @Serializable
 data class AddTransactionRequest(
-    val amount: String,
+    val amount: Double,
     val merchant: String,
     val mcc: String? = null,
     val description: String? = null
@@ -109,7 +109,7 @@ data class CategorySpendRow(
     val categoryName: String,
     val icon: String,
     val color: String,
-    val spent: String,
+    val spent: Double,
     val count: Long
 )
 
@@ -127,9 +127,9 @@ data class SyncResult(
 data class GoalView(
     val id: Long,
     val title: String,
-    val targetAmount: String,
-    val currentAmount: String,
-    val progress: String,
+    val targetAmount: Double,
+    val currentAmount: Double,
+    val progress: Double,
     val targetDate: String? = null,
     val linkedCategoryId: Long? = null
 )
@@ -137,23 +137,23 @@ data class GoalView(
 @Serializable
 data class CreateGoalRequest(
     val title: String,
-    val targetAmount: String,
+    val targetAmount: Double,
     val targetDate: String? = null,
     val linkedCategoryId: Long? = null
 )
 
 @Serializable
-data class ContributeRequest(val amount: String)
+data class ContributeRequest(val amount: Double)
 
 // ============ Insights ============
 
 @Serializable
 data class Forecast(
-    val spentSoFar: String,
-    val dailyAvg: String,
-    val projectedSpent: String,
-    val monthlyIncome: String,
-    val projectedOver: String,
+    val spentSoFar: Double,
+    val dailyAvg: Double,
+    val projectedSpent: Double,
+    val monthlyIncome: Double,
+    val projectedOver: Double,
     val daysLeft: Long
 )
 
@@ -161,13 +161,13 @@ data class Forecast(
 data class BreakdownSlice(
     val categoryId: Long? = null,
     val label: String,
-    val amount: String
+    val amount: Double
 )
 
 @Serializable
 data class TrendPoint(
     val date: String,
-    val amount: String
+    val amount: Double
 )
 
 // ============ Notifications ============

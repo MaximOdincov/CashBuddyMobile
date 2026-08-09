@@ -31,6 +31,8 @@ fun createHttpClient(appSettings: AppSettings): HttpClient = HttpClient {
             ignoreUnknownKeys = true
             encodeDefaults = true
             prettyPrint = false
+            isLenient = true            // толерантнее к незначительным расхождениям
+            coerceInputValues = true    // null → дефолт при type-mismatch
         })
     }
 

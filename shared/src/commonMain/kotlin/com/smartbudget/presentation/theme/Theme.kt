@@ -12,42 +12,48 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 private val LightColors = lightColorScheme(
-    primary = GreenPrimary,
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFD1FAE5),
-    onPrimaryContainer = Color(0xFF062A12),
-    secondary = GreenDark,
+    primary = TbankYellow,
+    onPrimary = Color(0xFF1A1A1E),       // тёмный текст на жёлтом (контраст)
+    primaryContainer = TbankYellowContainer,
+    onPrimaryContainer = TbankYellowOnContainer,
+    secondary = SavingsGreen,
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = SavingsGreenContainer,
     background = LightBg,
     onBackground = TextPrimaryLight,
     surface = LightSurface,
     onSurface = TextPrimaryLight,
     surfaceVariant = LightSurfaceVariant,
     onSurfaceVariant = TextSecondaryLight,
-    error = Red,
-    onError = Color(0xFFFFFFFF)
+    error = DangerRed,
+    onError = Color(0xFFFFFFFF),
+    errorContainer = DangerRedContainer
 )
 
 private val DarkColors = darkColorScheme(
-    primary = GreenLight,
-    onPrimary = Color(0xFF00390F),
-    primaryContainer = GreenDark,
-    onPrimaryContainer = Color(0xFFB4F4C2),
-    secondary = GreenLight,
+    primary = TbankYellow,
+    onPrimary = Color(0xFF1A1A1E),
+    primaryContainer = Color(0xFF4A3F00),
+    onPrimaryContainer = Color(0xFFFFF6CC),
+    secondary = SavingsGreen,
+    onSecondary = Color(0xFF00390F),
+    secondaryContainer = Color(0xFF063D1C),
     background = DarkBg,
     onBackground = TextPrimaryDark,
     surface = DarkSurface,
     onSurface = TextPrimaryDark,
     surfaceVariant = DarkSurfaceVariant,
     onSurfaceVariant = TextSecondaryDark,
-    error = Red,
-    onError = Color(0xFFFFFFFF)
+    error = DangerRed,
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFF5D1B14)
 )
 
 val AppTypography = Typography(
-    headlineLarge = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold),
-    headlineMedium = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.SemiBold),
-    titleLarge = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.SemiBold),
-    titleMedium = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium),
+    headlineLarge = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.Bold),
+    headlineMedium = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+    titleLarge = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold),
+    titleMedium = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
     bodyLarge = TextStyle(fontSize = 16.sp),
     bodyMedium = TextStyle(fontSize = 14.sp),
     labelLarge = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium),

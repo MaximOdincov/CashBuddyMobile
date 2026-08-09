@@ -50,7 +50,7 @@ fun appModule(): Module = module {
 
     // ViewModels
     factory { LoginViewModel(get(), get()) }
-    factory { BudgetViewModel(get(), get()) }
+    factory { BudgetViewModel(get(), get(), get()) }
     factory { ChatViewModel(get()) }
     factory { GoalsViewModel(get()) }
     factory { NotificationsViewModel(get()) }

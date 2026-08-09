@@ -29,6 +29,8 @@ class LoginViewModel(
                 val result = block()
                 appSettings.accessToken = result.accessToken
                 appSettings.lastShareCode = result.shareCode
+                // подтягиваем имя пользователя с сервера для приветствия
+                try { appSettings.username = authRepository.me().username } catch (_: Exception) {}
                 _state.value = LoginState.Success(result)
             } catch (e: Exception) {
                 _state.value = LoginState.Error(humanizeError(e))

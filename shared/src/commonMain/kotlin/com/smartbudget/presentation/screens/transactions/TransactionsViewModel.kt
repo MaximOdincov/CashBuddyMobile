@@ -29,7 +29,7 @@ class TransactionsViewModel(
         }
     }
 
-    fun add(amount: String, merchant: String, mcc: String?, description: String?) {
+    fun add(amount: Double, merchant: String, mcc: String?, description: String?) {
         viewModelScope.launch {
             try {
                 transactionRepository.add(amount, merchant, mcc, description)

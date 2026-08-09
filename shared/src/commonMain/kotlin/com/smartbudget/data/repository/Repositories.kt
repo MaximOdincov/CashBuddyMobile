@@ -22,7 +22,7 @@ class BudgetRepository(api: ApiClient) : ApiClient(api.httpClient, api.appSettin
 
     suspend fun categories(): List<CategoryView> = get("/api/budget/categories")
 
-    suspend fun setIncome(income: String) {
+    suspend fun setIncome(income: Double) {
         putUnit("/api/budget/income", IncomeRequest(income))
     }
 
@@ -45,7 +45,7 @@ class TransactionRepository(api: ApiClient) : ApiClient(api.httpClient, api.appS
     suspend fun summary(month: String? = null): List<CategorySpendRow> =
         get("/api/transactions/summary", mapOf("month" to month))
 
-    suspend fun add(amount: String, merchant: String, mcc: String? = null, description: String? = null): TransactionDto =
+    suspend fun add(amount: Double, merchant: String, mcc: String? = null, description: String? = null): TransactionDto =
         post("/api/transactions", AddTransactionRequest(amount, merchant, mcc, description))
 
     suspend fun generateBank(count: Int = 5, hoursBack: Long = 24): SyncResult =
@@ -57,12 +57,12 @@ class GoalsRepository(api: ApiClient) : ApiClient(api.httpClient, api.appSetting
 
     suspend fun create(
         title: String,
-        targetAmount: String,
+        targetAmount: Double,
         targetDate: String? = null,
         linkedCategoryId: Long? = null
     ): GoalView = post("/api/goals", CreateGoalRequest(title, targetAmount, targetDate, linkedCategoryId))
 
-    suspend fun contribute(goalId: Long, amount: String): GoalView =
+    suspend fun contribute(goalId: Long, amount: Double): GoalView =
         post("/api/goals/$goalId/contribute", ContributeRequest(amount))
 }
 

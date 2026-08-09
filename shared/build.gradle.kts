@@ -47,6 +47,8 @@ kotlin {
             implementation(libs.compose.uiTooling)
             // Ktor OkHttp engine
             implementation(libs.ktor.engine.okhttp)
+            // BackHandler на Android
+            implementation(libs.androidx.activity.compose)
         }
         iosMain.dependencies {
             // Ktor Darwin engine

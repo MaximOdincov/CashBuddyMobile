@@ -29,9 +29,15 @@ class AppSettings(private val settings: Settings) {
         get() = settings.getString(KEY_SHARE_CODE, "")
         set(value) = settings.putString(KEY_SHARE_CODE, value)
 
+    /** Имя пользователя (для приветствия на Обзоре). */
+    var username: String
+        get() = settings.getString(KEY_USERNAME, "")
+        set(value) = settings.putString(KEY_USERNAME, value)
+
     fun logout() {
         settings.remove(KEY_TOKEN)
         settings.remove(KEY_SHARE_CODE)
+        settings.remove(KEY_USERNAME)
     }
 
     private companion object {
@@ -39,6 +45,7 @@ class AppSettings(private val settings: Settings) {
         const val KEY_BASE_URL = "base_url"
         const val KEY_THEME = "theme_mode"
         const val KEY_SHARE_CODE = "share_code"
+        const val KEY_USERNAME = "username"
         const val DEFAULT_BASE_URL = "http://217.114.1.73:8080"
     }
 }

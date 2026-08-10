@@ -2,12 +2,9 @@ package com.smartbudget.presentation.navigation
 
 /** Все маршруты приложения. */
 object Routes {
-    // Главные (bottom nav)
     const val BUDGET = "budget"
     const val CHAT = "chat"
-    const val MORE = "more"
-
-    // Доп. экраны
+    const val TRANSACTIONS_TAB = "transactions_tab"   // третья вкладка
     const val LOGIN = "login"
     const val CATEGORY_DETAIL = "category/{categoryId}"
     const val TRANSACTIONS = "transactions"
@@ -26,11 +23,11 @@ object Routes {
 data class BottomTab(
     val route: String,
     val label: String,
-    val icon: String // эмодзи-иконка (без зависимости от material-icons-extended)
+    val icon: String
 )
 
 val bottomTabs = listOf(
-    BottomTab(Routes.BUDGET, "Бюджет", "📊"),
-    BottomTab(Routes.CHAT, "Чат", "🤖"),
-    BottomTab(Routes.MORE, "Ещё", "☰")
+    BottomTab(Routes.BUDGET, "Бюджет", "budget"),
+    BottomTab(Routes.CHAT, "Чат", "chat"),
+    BottomTab(Routes.TRANSACTIONS_TAB, "Траты", "transactions_tab")
 )

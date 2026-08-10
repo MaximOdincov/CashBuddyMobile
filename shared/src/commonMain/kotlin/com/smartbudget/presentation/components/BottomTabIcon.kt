@@ -23,7 +23,7 @@ fun BottomTabIcon(route: String, selected: Boolean, modifier: Modifier = Modifie
         when (route) {
             "budget" -> drawDonutIcon(color)
             "chat" -> drawOrbIcon(color)
-            else -> drawGridIcon(color)
+            else -> drawListIcon(color)
         }
     }
 }
@@ -64,17 +64,23 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawOrbIcon(color: 
     )
 }
 
-/** Сетка из 4 квадратов — символ «Ещё». */
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGridIcon(color: Color) {
-    val gap = 3f
-    val cell = (size.minDimension - gap) / 2f
-    val positions = listOf(
-        Offset(0f, 0f),
-        Offset(cell + gap, 0f),
-        Offset(0f, cell + gap),
-        Offset(cell + gap, cell + gap)
-    )
-    for (p in positions) {
-        drawRect(color = color, topLeft = p, size = Size(cell, cell))
+/** Список (3 строки с точками-маркерами) — символ «Траты». */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawListIcon(color: Color) {
+    val w = size.width
+    val h = size.height
+    val rows = 3
+    val rowH = h / rows
+    val dotR = rowH * 0.18f
+    val lineH = rowH * 0.14f
+    for (i in 0 until rows) {
+        val y = rowH * (i + 0.5f)
+        // точка-маркер слева
+        drawCircle(color = color, radius = dotR, center = Offset(dotR + 1f, y))
+        // линия справа от точки
+        drawRect(
+            color = color,
+            topLeft = Offset(dotR * 2 + 5f, y - lineH / 2),
+            size = Size(w - dotR * 2 - 6f, lineH)
+        )
     }
 }

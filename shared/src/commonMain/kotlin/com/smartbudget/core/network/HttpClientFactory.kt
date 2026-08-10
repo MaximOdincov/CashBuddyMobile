@@ -41,12 +41,11 @@ fun createHttpClient(appSettings: AppSettings): HttpClient = HttpClient {
         level = LogLevel.NONE
     }
 
-    // Базовые заголовки + динамический Bearer токен
+    // Базовые заголовки. Bearer-токен НЕ здесь — он подставляется per-request
+    // в ApiClient (defaultRequest фиксирует значения один раз при создании клиента,
+    // что ломает авторизацию после логина).
     defaultRequest {
         header(HttpHeaders.ContentType, ContentType.Application.Json)
-        appSettings.accessToken.takeIf { it.isNotBlank() }?.let { token ->
-            header(HttpHeaders.Authorization, "Bearer $token")
-        }
     }
 
     // Проброс ошибок: при не-2xx кидаем ApiException с телом

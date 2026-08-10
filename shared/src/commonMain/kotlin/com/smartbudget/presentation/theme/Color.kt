@@ -6,11 +6,11 @@ import androidx.compose.ui.graphics.Color
 // Акцент главного действия — фирменный жёлтый Т-Банка (НЕ янтарный).
 // Янтарный (#FF9800) убран — заменён на мягкий персиковый «внимание».
 
-// Primary — жёлтый Т-Банка
+// Primary — чистый жёлтый Т-Банка
 val TbankYellow = Color(0xFFFFDD2D)
 val TbankYellowPressed = Color(0xFFF5CC00)
-val TbankYellowContainer = Color(0xFFFFF6CC)
-val TbankYellowOnContainer = Color(0xFF4A3F00)
+val TbankYellowContainer = Color(0xFFFFFCE8)        // очень светлый, тёплый (НЕ тёмный)
+val TbankYellowOnContainer = Color(0xFF3D3D3D)      // нейтрально-серый (НЕ коричневый)
 
 // Накопления / успех — зелёный
 val SavingsGreen = Color(0xFF00C808)
@@ -29,13 +29,13 @@ val DangerRedContainer = Color(0xFFFFDAD6)
 val NeutralBlue = Color(0xFF0A84FF)
 val NeutralBlueContainer = Color(0xFFD1E9FF)
 
-// Background
-val LightBg = Color(0xFFF7F8FA)
-val DarkBg = Color(0xFF0E0E10)
+// Background — мягкий, тёплый нейтральный
+val LightBg = Color(0xFFFAFAF8)
+val DarkBg = Color(0xFF121214)
 val LightSurface = Color(0xFFFFFFFF)
-val DarkSurface = Color(0xFF1A1A1E)
-val LightSurfaceVariant = Color(0xFFEFF1F4)
-val DarkSurfaceVariant = Color(0xFF242428)
+val DarkSurface = Color(0xFF1C1C1F)
+val LightSurfaceVariant = Color(0xFFF2F2EE)
+val DarkSurfaceVariant = Color(0xFF26262A)
 
 // Text
 val TextPrimaryLight = Color(0xFF1A1A1E)
@@ -43,14 +43,14 @@ val TextPrimaryDark = Color(0xFFF1F3F5)
 val TextSecondaryLight = Color(0xFF6B7280)
 val TextSecondaryDark = Color(0xFF9CA3AF)
 
-// Категории — мягкие закреплённые цвета
-val CatFood = Color(0xFF34C759)        // продукты — зелёный
-val CatBills = Color(0xFF5AC8FA)       // коммуналка — голубой (был оранжевый)
-val CatFun = Color(0xFFFF2D55)         // развлечения — розово-красный
-val CatTransport = Color(0xFF0A84FF)   // транспорт — синий
-val CatHealth = Color(0xFFAF52DE)      // здоровье — фиолетовый
-val CatSavings = Color(0xFF00C7BE)     // накопления — бирюзовый
-val CatOther = Color(0xFF8E8E93)       // прочее — серый
+// Категории — мягкие, гармоничные цвета
+val CatFood = Color(0xFF4CAF50)        // продукты — мягкий зелёный
+val CatBills = Color(0xFF42A5F5)       // коммуналка — спокойный голубой
+val CatFun = Color(0xFFEC407A)         // развлечения — приглушённый розовый
+val CatTransport = Color(0xFF5C6BC0)   // транспорт — индиго
+val CatHealth = Color(0xFFAB47BC)      // здоровье — мягкий фиолетовый
+val CatSavings = Color(0xFF26A69A)     // накопления — тихий бирюзовый
+val CatOther = Color(0xFF78909C)       // прочее — сине-серый
 
 /**
  * Цвет категории по её HEX (приходит с сервера) или по имени.

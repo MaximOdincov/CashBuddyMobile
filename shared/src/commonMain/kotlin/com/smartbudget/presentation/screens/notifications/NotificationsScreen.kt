@@ -39,7 +39,11 @@ fun NotificationsScreen(
                         Text("Нет уведомлений", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
-                    LazyColumn(Modifier.padding(padding).fillMaxSize()) {
+                    LazyColumn(
+                        Modifier.padding(padding).fillMaxSize(),
+                        contentPadding = PaddingValues(12.dp, 8.dp, 12.dp, 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         items(s.items) { n -> NotificationCard(n) { viewModel.markRead(n.id) } }
                     }
                 }
@@ -55,20 +59,26 @@ private fun NotificationCard(n: NotificationDto, onClick: () -> Unit) {
         "WARN" -> WarnPeach
         else -> SavingsGreen
     }
+    // ВСЕ карточки белые/тёмные (surface), без тонировки
     Surface(
         onClick = onClick,
-        Modifier.fillMaxWidth().padding(16.dp, 4.dp),
+        Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = if (!n.isRead) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp
     ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.Top) {
+            // маленькая цветная точка-индикатор вместо тонировки
             Box(Modifier.size(10.dp).padding(top = 6.dp).clip(CircleShape).background(color))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(n.title, fontWeight = FontWeight.Medium)
+                Text(n.title, fontWeight = FontWeight.Medium, style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(2.dp))
                 Text(n.message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (!n.isRead) {
+                // маленькая точка "непрочитано" справа
+                Box(Modifier.size(8.dp).padding(top = 4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
             }
         }
     }

@@ -11,23 +11,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.smartbudget.core.storage.AppSettings
 import com.smartbudget.core.util.formatMoney
 import com.smartbudget.core.util.formatPercent
-import com.smartbudget.core.util.greeting
 import com.smartbudget.core.util.monthName
 import com.smartbudget.domain.model.BudgetItem
 import com.smartbudget.domain.model.BudgetOverview
-import com.smartbudget.presentation.components.BudgetStatus
-import com.smartbudget.presentation.components.MiniProgressBar
-import com.smartbudget.presentation.components.SectionHeader
-import com.smartbudget.presentation.components.StatusBadge
-import com.smartbudget.presentation.components.budgetStatus
+import com.smartbudget.domain.model.GoalView
+import com.smartbudget.presentation.components.*
 import com.smartbudget.presentation.theme.*
 import org.koin.compose.koinInject
 
@@ -37,33 +31,24 @@ fun BudgetScreen(
     onCategoryClick: (Long, String) -> Unit,
     onAddTransaction: () -> Unit,
     onOpenGoals: () -> Unit,
-    onOpenChat: () -> Unit,
     onOpenBudgetEdit: () -> Unit,
-    viewModel: BudgetViewModel = koinInject(),
-    appSettings: AppSettings = koinInject()
+    onNotifications: () -> Unit = {},
+    onSettings: () -> Unit = {},
+    viewModel: BudgetViewModel = koinInject()
 ) {
     val state by viewModel.state.collectAsState()
     val forecast by viewModel.forecast.collectAsState()
-    val syncResult by viewModel.syncResult.collectAsState()
+    val mainGoal by viewModel.mainGoal.collectAsState()
+    val currentMonth by viewModel.currentMonth.collectAsState()
+    val unreadCount by viewModel.unreadCount.collectAsState()
 
-    // перезагрузка при изменении key (возврат после AI-действия)
     LaunchedEffect(key) { viewModel.load() }
 
     Scaffold(
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onAddTransaction,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                icon = { Text("+", fontSize = 22.sp, fontWeight = FontWeight.Bold) },
-                text = { Text("Трата") }
-            )
-        }
+        topBar = { CashBuddyTopBar("Бюджет", onNotifications, onSettings, unreadCount = unreadCount) }
     ) { padding ->
         when (val s = state) {
-            is BudgetState.Loading -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            is BudgetState.Loading -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             is BudgetState.Error -> Box(Modifier.fillMaxSize().padding(padding).padding(16.dp), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(s.message, color = MaterialTheme.colorScheme.error)
@@ -74,13 +59,13 @@ fun BudgetScreen(
             is BudgetState.Success -> OverviewContent(
                 overview = s.overview,
                 forecast = forecast,
-                username = appSettings.username,
+                mainGoal = mainGoal,
                 onCategoryClick = onCategoryClick,
-                onSync = { viewModel.syncBank() },
                 onOpenGoals = onOpenGoals,
-                onOpenChat = onOpenChat,
                 onOpenBudgetEdit = onOpenBudgetEdit,
-                syncMessage = syncResult?.let { "Импортировано ${it.imported} операций" },
+                currentMonth = currentMonth,
+                onPrevMonth = { viewModel.shiftMonth(-1) },
+                onNextMonth = { viewModel.shiftMonth(+1) },
                 modifier = Modifier.padding(padding)
             )
         }
@@ -91,134 +76,104 @@ fun BudgetScreen(
 private fun OverviewContent(
     overview: BudgetOverview,
     forecast: com.smartbudget.domain.model.Forecast?,
-    username: String,
+    mainGoal: GoalView?,
     onCategoryClick: (Long, String) -> Unit,
-    onSync: () -> Unit,
     onOpenGoals: () -> Unit,
-    onOpenChat: () -> Unit,
     onOpenBudgetEdit: () -> Unit,
-    syncMessage: String?,
+    currentMonth: String,
+    onPrevMonth: () -> Unit,
+    onNextMonth: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val name = if (username.isNotBlank()) ", $username" else ""
-    val monthTitle = monthName(overview.periodMonth)
+    val monthTitle = monthName(currentMonth)
     val daysLeft = forecast?.daysLeft ?: 0L
     val canSpend = forecast?.let { (it.monthlyIncome - it.projectedSpent).coerceAtLeast(0.0) } ?: overview.monthlyIncome
     val daily = forecast?.dailyAvg ?: 0.0
     val hasRisk = forecast?.projectedOver?.let { it > 0.0 } ?: false
 
-    LazyColumn(
-        modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 96.dp)
-    ) {
-        // === Верх: приветствие + период + статус ===
+    LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
+        // Переключатель месяца ‹ Месяц ›
         item {
-            Column(Modifier.padding(16.dp, 12.dp)) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = onPrevMonth) { Text("‹", style = MaterialTheme.typography.titleLarge) }
                 Text(
-                    "${greeting()}$name",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
+                    monthTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-                Text(
-                    "$monthTitle · осталось $daysLeft дн.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(8.dp))
-                StatusChip(hasRisk = hasRisk)
+                TextButton(onClick = onNextMonth) { Text("›", style = MaterialTheme.typography.titleLarge) }
             }
         }
 
-        // === Главная карточка «Можно потратить» ===
-        item {
-            MainCard(
-                canSpend = canSpend,
-                daily = daily,
-                overview = overview,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-        }
+        // Главная карточка
+        item { MainCard(canSpend, daily, overview) }
 
-        // === AI-инсайт (если есть риск) ===
+        // AI-инсайт при риске
         if (hasRisk) {
             item {
                 Spacer(Modifier.height(12.dp))
-                InsightCard(
-                    forecast = forecast!!,
-                    onClick = onOpenChat,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
+                InsightCard(forecast!!, Modifier.padding(horizontal = 16.dp))
             }
         }
 
-        // === Быстрые действия ===
+        // Виджет главной цели
+        if (mainGoal != null) {
+            item {
+                Spacer(Modifier.height(16.dp))
+                MainGoalWidget(mainGoal!!, onOpen = onOpenGoals, Modifier.padding(horizontal = 16.dp))
+            }
+        }
+
+        // Быстрые действия
         item {
             Spacer(Modifier.height(16.dp))
-            QuickActions(
-                onBudgetEdit = onOpenBudgetEdit,
-                onAddGoal = onOpenGoals,
-                onAsk = onOpenChat
-            )
+            QuickActions(onBudgetEdit = onOpenBudgetEdit, onGoal = onOpenGoals)
         }
 
-        // === Кнопка синхронизации банка ===
-        item {
-            Spacer(Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = onSync,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Text("↻")
-                Spacer(Modifier.width(8.dp))
-                Text("Синхронизировать банк")
-            }
-            syncMessage?.let {
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "  $it",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
-        }
+        // Категории: расходы
+        val expenses = overview.allocations.filter { !it.isSavings }
+            .sortedWith(compareByDescending<BudgetItem> { budgetStatusRank(it.pct) }.thenByDescending { it.spent })
+        item { SectionHeader("Расходы") }
+        // Легенда цветов категорий
+        item { CategoryLegend(expenses) }
+        items(expenses) { item -> CategoryRow(item, onClick = { onCategoryClick(item.categoryId, item.categoryName) }) }
 
-        // === Категории ===
-        item {
-            SectionHeader(
-                title = "Категории",
-                action = "Все",
-                onAction = onOpenBudgetEdit
-            )
-        }
-        // сортируем: сначала требующие внимания, потом по тратам
-        val sorted = overview.allocations
-            .filter { !it.isSavings }
-            .sortedWith(compareByDescending<BudgetItem> { it.pct }.thenByDescending { it.spent })
-        items(sorted.take(6)) { item -> CategoryRow(item, onClick = { onCategoryClick(item.categoryId, item.categoryName) }) }
-    }
-}
-
-@Composable
-private fun StatusChip(hasRisk: Boolean) {
-    val (text, color) = if (hasRisk) "Нужно внимание" to WarnPeach else "Всё по плану" to SavingsGreen
-    Surface(color = color.copy(alpha = 0.15f), shape = RoundedCornerShape(10.dp)) {
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(color))
-            Spacer(Modifier.width(8.dp))
-            Text(text, style = MaterialTheme.typography.labelLarge, color = color, fontWeight = FontWeight.Medium)
+        // Категории: накопления
+        val savings = overview.allocations.filter { it.isSavings }
+        if (savings.isNotEmpty()) {
+            item { SectionHeader("Накопления") }
+            items(savings) { item -> CategoryRow(item, onClick = { onCategoryClick(item.categoryId, item.categoryName) }) }
         }
     }
 }
 
+private fun budgetStatusRank(pct: Double): Int = when {
+    pct >= 100.0 -> 3
+    pct >= 80.0 -> 2
+    else -> 1
+}
+
 @Composable
-private fun MainCard(canSpend: Double, daily: Double, overview: BudgetOverview, modifier: Modifier = Modifier) {
+private fun SectionHeader(title: String) {
+    Text(
+        title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+    )
+}
+
+@Composable
+private fun MainCard(canSpend: Double, daily: Double, overview: BudgetOverview) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        Modifier.fillMaxWidth().padding(16.dp),
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
         shadowElevation = 1.dp
     ) {
         Column(Modifier.padding(20.dp)) {
@@ -228,33 +183,37 @@ private fun MainCard(canSpend: Double, daily: Double, overview: BudgetOverview, 
             Spacer(Modifier.height(2.dp))
             Text("${formatMoney(daily)} в день", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(16.dp))
-            // Полоса распределения: обязательные / повседневные / накопления / свободные
+            // Полоса распределения
             val total = overview.monthlyIncome.coerceAtLeast(0.0001)
             val essential = overview.allocations.filter { !it.isSavings }.sumOf { it.limitAmount }
-            val savings = overview.allocations.filter { it.isSavings }.sumOf { it.limitAmount }
-            val free = (overview.monthlyIncome - essential - savings).coerceAtLeast(0.0)
-            DistributionBar(
-                segments = listOf(
-                    "Обязательные" to (essential / total).toFloat(),
-                    "Накопления" to (savings / total).toFloat(),
-                    "Свободные" to (free / total).toFloat()
-                )
-            )
+            val savingsSum = overview.allocations.filter { it.isSavings }.sumOf { it.limitAmount }
+            val free = (overview.monthlyIncome - essential - savingsSum).coerceAtLeast(0.0)
+            DistributionBar(listOf(
+                "Обязательные" to (essential / total).toFloat(),
+                "Накопления" to (savingsSum / total).toFloat(),
+                "Свободные" to (free / total).toFloat()
+            ))
             Spacer(Modifier.height(8.dp))
             Row {
-                LegendDot(SavingsGreen, "Обязательные")
+                LegendDot(CatBills, "Обязательные")
                 Spacer(Modifier.width(12.dp))
                 LegendDot(CatSavings, "Накопления")
                 Spacer(Modifier.width(12.dp))
                 LegendDot(NeutralBlue, "Свободные")
             }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Это ваш доход, распределённый по категориям. «Свободные» — то, что можно потратить без риска для бюджета.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
 
 @Composable
 private fun DistributionBar(segments: List<Pair<String, Float>>) {
-    val colors = listOf(SavingsGreen, CatSavings, NeutralBlue)
+    val colors = listOf(CatBills, CatSavings, NeutralBlue)
     Surface(
         Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
@@ -262,9 +221,7 @@ private fun DistributionBar(segments: List<Pair<String, Float>>) {
         Row(Modifier.fillMaxHeight()) {
             segments.forEachIndexed { i, (_, frac) ->
                 if (frac > 0f) {
-                    Box(
-                        Modifier.fillMaxHeight().weight(frac).background(colors.getOrElse(i) { CatOther })
-                    )
+                    Box(Modifier.fillMaxHeight().weight(frac).background(colors.getOrElse(i) { CatOther }))
                 }
             }
         }
@@ -281,68 +238,62 @@ private fun LegendDot(color: Color, label: String) {
 }
 
 @Composable
-private fun InsightCard(forecast: com.smartbudget.domain.model.Forecast, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun InsightCard(forecast: com.smartbudget.domain.model.Forecast, modifier: Modifier = Modifier) {
     Surface(
-        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
     ) {
         Column(Modifier.padding(16.dp)) {
-            Text("Похоже, расходы идут быстрее плана", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+            Text("Расходы идут быстрее плана", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
             Text(
-                "Прогноз превышения: ${formatMoney(forecast.projectedOver)}. Ассистент подскажет, что можно сделать.",
+                "Прогноз превышения: ${formatMoney(forecast.projectedOver)}.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.height(8.dp))
-            Text("Посмотреть варианты →", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium, style = MaterialTheme.typography.labelLarge)
         }
     }
 }
 
 @Composable
-private fun QuickActions(onBudgetEdit: () -> Unit, onAddGoal: () -> Unit, onAsk: () -> Unit) {
+private fun MainGoalWidget(goal: GoalView, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        onClick = onOpen,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(56.dp).clip(CircleShape).background(CatSavings.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+                Text("${goal.progress.toInt()}%", color = CatSavings, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Цель", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(goal.title, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+                Text("${formatMoney(goal.currentAmount)} из ${formatMoney(goal.targetAmount)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickActions(onBudgetEdit: () -> Unit, onGoal: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        QuickActionTile("Изменить бюджет", "✎", Modifier.weight(1f), onBudgetEdit, accent = false)
-        QuickActionTile("Добавить цель", "✚", Modifier.weight(1f), onAddGoal, accent = false)
-    }
-    Spacer(Modifier.height(8.dp))
-    // Акцентная кнопка «Спросить ассистента»
-    Surface(
-        onClick = onAsk,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.primary
-    ) {
-        Row(
-            Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Box(
-                Modifier.size(28.dp).clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) { Text("✦", color = MaterialTheme.colorScheme.onPrimary, fontSize = 16.sp) }
-            Spacer(Modifier.width(10.dp))
-            Text("Спросить ассистента", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.SemiBold)
-        }
+        QuickActionTile("Изменить бюджет", "✎", Modifier.weight(1f), onBudgetEdit)
+        QuickActionTile("Цель", "◎", Modifier.weight(1f), onGoal)
     }
 }
 
 @Composable
-private fun QuickActionTile(label: String, icon: String, modifier: Modifier = Modifier, onClick: () -> Unit, accent: Boolean) {
-    val bg = MaterialTheme.colorScheme.surface
-    Surface(onClick = onClick, modifier = modifier, shape = RoundedCornerShape(16.dp), color = bg, tonalElevation = 1.dp) {
-        Column(
-            Modifier.padding(vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+private fun QuickActionTile(label: String, icon: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Surface(onClick = onClick, modifier = modifier, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp) {
+        Column(Modifier.padding(vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(icon, style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(4.dp))
             Text(label, style = MaterialTheme.typography.labelLarge)
@@ -359,7 +310,7 @@ private fun CategoryRow(item: BudgetItem, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp
+        shadowElevation = 1.dp
     ) {
         Column(Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -386,6 +337,43 @@ private fun CategoryRow(item: BudgetItem, onClick: () -> Unit) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun CategoryLegend(items: List<BudgetItem>) {
+    Surface(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp
+    ) {
+        // Сетка 2 колонки: цветная точка + имя категории
+        Column(Modifier.padding(12.dp)) {
+            items.chunked(2).forEach { row ->
+                Row(Modifier.padding(vertical = 3.dp)) {
+                    row.forEach { item ->
+                        val color = categoryColor(item.categoryName)
+                        Row(
+                            Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                Modifier.size(10.dp).clip(CircleShape).background(color)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                item.categoryName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    // заполнитель, если в ряду 1 элемент
+                    if (row.size == 1) { Spacer(Modifier.weight(1f)) }
+                }
+            }
         }
     }
 }

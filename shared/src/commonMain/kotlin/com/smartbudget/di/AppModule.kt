@@ -12,6 +12,7 @@ import com.smartbudget.data.repository.InsightsRepository
 import com.smartbudget.data.repository.NotificationsRepository
 import com.smartbudget.data.repository.TransactionRepository
 import com.smartbudget.presentation.screens.auth.LoginViewModel
+import com.smartbudget.presentation.screens.budget.BudgetEditViewModel
 import com.smartbudget.presentation.screens.budget.BudgetViewModel
 import com.smartbudget.presentation.screens.chat.ChatViewModel
 import com.smartbudget.presentation.screens.goals.GoalsViewModel
@@ -50,7 +51,8 @@ fun appModule(): Module = module {
 
     // ViewModels
     factory { LoginViewModel(get(), get()) }
-    factory { BudgetViewModel(get(), get(), get()) }
+    factory { BudgetViewModel(get(), get(), get(), get(), get()) }
+    factory { BudgetEditViewModel(get()) }
     factory { ChatViewModel(get()) }
     factory { GoalsViewModel(get()) }
     factory { NotificationsViewModel(get()) }

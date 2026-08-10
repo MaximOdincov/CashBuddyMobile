@@ -10,27 +10,58 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.smartbudget.core.util.formatMoney
 import com.smartbudget.domain.model.TransactionDto
 import com.smartbudget.presentation.components.BackArrow
+import com.smartbudget.presentation.components.CashBuddyTopBar
 import org.koin.compose.koinInject
 
 @Composable
 fun TransactionsScreen(
+    asTab: Boolean = false,
+    key: Int = 0,
+    onAddTransaction: () -> Unit = {},
+    onNotifications: () -> Unit = {},
+    onSettings: () -> Unit = {},
     onBack: () -> Unit = {},
     viewModel: TransactionsViewModel = koinInject()
 ) {
     val state by viewModel.state.collectAsState()
-    LaunchedEffect(Unit) { viewModel.load() }
+    LaunchedEffect(key) { viewModel.load() }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Транзакции") }, navigationIcon = { BackArrow(onBack) }) }
+        topBar = {
+            if (asTab) CashBuddyTopBar("Траты", onNotifications, onSettings)
+            else TopAppBar(title = { Text("Транзакции") }, navigationIcon = { BackArrow(onBack) })
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = onAddTransaction,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                icon = { Text("+", fontSize = 22.sp, fontWeight = FontWeight.Bold) },
+                text = { Text("Добавить") }
+            )
+        }
     ) { padding ->
         when (val s = state) {
             is TransactionsState.Loading -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             is TransactionsState.Error -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Text(s.message, color = MaterialTheme.colorScheme.error) }
-            is TransactionsState.Success -> LazyColumn(Modifier.padding(padding).fillMaxSize()) {
-                items(s.items) { tx -> TxRow(tx) }
+            is TransactionsState.Success -> {
+                if (s.items.isEmpty()) {
+                    Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                        Text("Транзакций пока нет", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else {
+                    LazyColumn(
+                        Modifier.padding(padding).fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 96.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(s.items) { tx -> TxRow(tx) }
+                    }
+                }
             }
         }
     }
@@ -38,7 +69,7 @@ fun TransactionsScreen(
 
 @Composable
 private fun TxRow(tx: TransactionDto) {
-    Surface(Modifier.fillMaxWidth().padding(16.dp, 4.dp), shape = RoundedCornerShape(12.dp), tonalElevation = 1.dp) {
+    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp), shadowElevation = 1.dp) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(tx.merchant, fontWeight = FontWeight.Medium)

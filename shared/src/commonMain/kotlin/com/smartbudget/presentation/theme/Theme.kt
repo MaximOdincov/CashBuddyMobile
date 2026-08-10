@@ -11,14 +11,17 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+// === accent colors (для FAB и редких акцентов) ===
+val AccentYellow = TbankYellow
+
 private val LightColors = lightColorScheme(
     primary = TbankYellow,
-    onPrimary = Color(0xFF1A1A1E),       // тёмный текст на жёлтом (контраст)
+    onPrimary = Color(0xFF1A1A1E),
     primaryContainer = TbankYellowContainer,
     onPrimaryContainer = TbankYellowOnContainer,
     secondary = SavingsGreen,
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = SavingsGreenContainer,
+    secondaryContainer = Color(0xFFE8F7EC),
     background = LightBg,
     onBackground = TextPrimaryLight,
     surface = LightSurface,
@@ -33,8 +36,8 @@ private val LightColors = lightColorScheme(
 private val DarkColors = darkColorScheme(
     primary = TbankYellow,
     onPrimary = Color(0xFF1A1A1E),
-    primaryContainer = Color(0xFF4A3F00),
-    onPrimaryContainer = Color(0xFFFFF6CC),
+    primaryContainer = Color(0xFF2A2A2E),
+    onPrimaryContainer = Color(0xFFFFF7CC),
     secondary = SavingsGreen,
     onSecondary = Color(0xFF00390F),
     secondaryContainer = Color(0xFF063D1C),
@@ -50,20 +53,16 @@ private val DarkColors = darkColorScheme(
 )
 
 val AppTypography = Typography(
-    headlineLarge = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.Bold),
-    headlineMedium = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold),
-    titleLarge = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold),
-    titleMedium = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
-    bodyLarge = TextStyle(fontSize = 16.sp),
-    bodyMedium = TextStyle(fontSize = 14.sp),
-    labelLarge = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium),
-    labelSmall = TextStyle(fontSize = 11.sp)
+    headlineLarge = TextStyle(fontSize = 38.sp, fontWeight = FontWeight.Bold),
+    headlineMedium = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold),
+    titleLarge = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.SemiBold),
+    titleMedium = TextStyle(fontSize = 19.sp, fontWeight = FontWeight.SemiBold),
+    bodyLarge = TextStyle(fontSize = 18.sp),
+    bodyMedium = TextStyle(fontSize = 16.sp),
+    labelLarge = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium),
+    labelSmall = TextStyle(fontSize = 13.sp)
 )
 
-/**
- * Тема приложения.
- * @param themeMode "system" | "light" | "dark" (из настроек)
- */
 @Composable
 fun CashBuddyTheme(
     themeMode: String = "system",

@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.smartbudget.core.util.formatMoney
 import com.smartbudget.domain.model.GoalView
 import com.smartbudget.presentation.components.BackArrow
+import com.smartbudget.presentation.components.neutralTextFieldColors
 import com.smartbudget.presentation.components.ProgressRing
 import com.smartbudget.presentation.theme.SavingsGreen
 import org.koin.compose.koinInject
@@ -110,7 +111,7 @@ private fun ActiveGoalCard(goal: GoalView, onContribute: () -> Unit) {
         Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp
+        shadowElevation = 1.dp
     ) {
         Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             ProgressRing(
@@ -147,7 +148,7 @@ private fun MiniGoalCard(goal: GoalView, onContribute: () -> Unit) {
         Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp
+        shadowElevation = 1.dp
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -175,9 +176,9 @@ private fun CreateGoalDialog(onDismiss: () -> Unit, onCreate: (String, Double) -
         title = { Text("Новая цель") },
         text = {
             Column {
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Название") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Название") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = neutralTextFieldColors())
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Сумма, ₽") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Сумма, ₽") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = neutralTextFieldColors())
             }
         },
         confirmButton = {

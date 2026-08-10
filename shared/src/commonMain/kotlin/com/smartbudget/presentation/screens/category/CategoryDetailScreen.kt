@@ -60,7 +60,7 @@ fun CategoryDetailScreen(
 
 @Composable
 private fun TxRow(tx: TransactionDto) {
-    Surface(Modifier.fillMaxWidth().padding(16.dp, 4.dp), shape = RoundedCornerShape(12.dp), tonalElevation = 1.dp) {
+    Surface(Modifier.fillMaxWidth().padding(16.dp, 4.dp), shape = RoundedCornerShape(12.dp), shadowElevation = 1.dp) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(tx.merchant, fontWeight = FontWeight.Medium)

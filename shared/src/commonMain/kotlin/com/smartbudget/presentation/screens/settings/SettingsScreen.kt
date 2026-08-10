@@ -40,7 +40,7 @@ fun SettingsScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 1.dp
+                    shadowElevation = 1.dp
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(12.dp)) {
                         RadioButton(selected = theme == value, onClick = null)

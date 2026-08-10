@@ -27,7 +27,8 @@ class ChatViewModel(
                 _messages.value = history.map {
                     UiMessage(
                         text = it.content,
-                        isUser = it.role == "user",
+                        // Сервер хранит ChatRole.USER (@Enumerated STRING) → Jackson отдаёт "USER"
+                        isUser = it.role.equals("user", ignoreCase = true),
                         actions = emptyList()
                     )
                 }

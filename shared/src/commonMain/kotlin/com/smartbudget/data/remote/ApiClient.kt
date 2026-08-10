@@ -6,6 +6,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -62,7 +63,7 @@ open class ApiClient(
         queryParams.forEach { (k, v) -> if (v != null) url.parameters.append(k, v) }
     }.body()
 
-    /** Настраивает полный URL: baseUrl + path. */
+    /** Настраивает полный URL: baseUrl + path + актуальный Bearer-токен. */
     protected fun HttpRequestBuilder.configureUrl(path: String) {
         val parsed = parseBaseUrl(appSettings.baseUrl)
         url {
@@ -70,6 +71,11 @@ open class ApiClient(
             host = parsed.host
             port = parsed.port
             encodedPath = path
+        }
+        // Per-request Bearer: читаем токен на момент каждого запроса,
+        // чтобы он был актуален после логина.
+        appSettings.accessToken.takeIf { it.isNotBlank() }?.let { token ->
+            header(io.ktor.http.HttpHeaders.Authorization, "Bearer $token")
         }
     }
 }

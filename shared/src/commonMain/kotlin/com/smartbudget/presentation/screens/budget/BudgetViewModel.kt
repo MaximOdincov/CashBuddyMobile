@@ -91,7 +91,8 @@ class BudgetViewModel(
         month += delta
         while (month < 1) { month += 12; year -= 1 }
         while (month > 12) { month -= 12; year += 1 }
-        return "%04d-%02d".format(year, month)
+        val monthStr = if (month < 10) "0$month" else "$month"
+        return "$year-$monthStr"
     }
 
     private fun platformToday(): String = com.smartbudget.core.platform.todayYearMonth()

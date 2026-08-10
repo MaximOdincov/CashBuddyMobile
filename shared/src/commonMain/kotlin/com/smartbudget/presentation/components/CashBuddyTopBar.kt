@@ -15,6 +15,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -125,13 +128,13 @@ private fun DrawScope.drawGear(color: Color) {
     // 6 зубцов (короткие линии наружу)
     val toothLen = w * 0.12f
     for (i in 0..5) {
-        val angle = (i * 60).toDouble() * Math.PI / 180.0
+        val angle = (i * 60).toDouble() * PI / 180.0
         val innerR = w * 0.34f
         val outerR = innerR + toothLen
-        val x1 = cx + (innerR * Math.cos(angle)).toFloat()
-        val y1 = cy + (innerR * Math.sin(angle)).toFloat()
-        val x2 = cx + (outerR * Math.cos(angle)).toFloat()
-        val y2 = cy + (outerR * Math.sin(angle)).toFloat()
+        val x1 = cx + (innerR * cos(angle)).toFloat()
+        val y1 = cy + (innerR * sin(angle)).toFloat()
+        val x2 = cx + (outerR * cos(angle)).toFloat()
+        val y2 = cy + (outerR * sin(angle)).toFloat()
         drawLine(color, Offset(x1, y1), Offset(x2, y2), stroke, cap = StrokeCap.Round)
     }
 }

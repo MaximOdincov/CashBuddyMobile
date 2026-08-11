@@ -31,14 +31,19 @@ fun createHttpClient(appSettings: AppSettings): HttpClient = HttpClient {
             ignoreUnknownKeys = true
             encodeDefaults = true
             prettyPrint = false
-            isLenient = true            // толерантнее к незначительным расхождениям
-            coerceInputValues = true    // null → дефолт при type-mismatch
+            isLenient = true
+            coerceInputValues = true
         })
     }
 
-    // Логирование (HEADERS/ALL для дебага)
-    install(Logging) {
-        level = LogLevel.NONE
+    // Логирование
+    install(Logging) { level = LogLevel.NONE }
+
+    // Таймауты: AI-запросы бывают долгими (до 120 сек)
+    install(io.ktor.client.plugins.HttpTimeout) {
+        requestTimeoutMillis = 120_000
+        connectTimeoutMillis = 15_000
+        socketTimeoutMillis = 120_000
     }
 
     // Базовые заголовки. Bearer-токен НЕ здесь — он подставляется per-request

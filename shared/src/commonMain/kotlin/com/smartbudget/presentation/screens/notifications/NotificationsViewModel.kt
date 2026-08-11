@@ -23,7 +23,7 @@ class NotificationsViewModel(
 
     fun load() {
         viewModelScope.launch {
-            _state.value = NotificationsState.Loading
+            // НЕ сбрасываем в Loading (fix мигания)
             try {
                 _state.value = NotificationsState.Success(notificationsRepository.list())
                 _unreadCount.value = notificationsRepository.unreadCount()["count"] ?: 0L

@@ -39,27 +39,37 @@ class ChatViewModel(
     fun send(text: String) {
         if (text.isBlank() || _isSending.value) return
 
-        // мгновенно показываем сообщение пользователя
         _messages.value = _messages.value + UiMessage(text = text, isUser = true, actions = emptyList())
         _isSending.value = true
 
         viewModelScope.launch {
-            try {
-                val reply = aiRepository.chat(text)
-                _messages.value = _messages.value + UiMessage(
-                    text = reply.reply,
-                    isUser = false,
-                    actions = reply.actions
-                )
-            } catch (e: Exception) {
-                _messages.value = _messages.value + UiMessage(
-                    text = "⚠️ Не удалось получить ответ. Проверьте подключение к серверу.",
-                    isUser = false,
-                    actions = emptyList()
-                )
-            } finally {
-                _isSending.value = false
+            var lastError: Exception? = null
+            // retry до 3 попыток (AI может быть медленным)
+            repeat(3) { attempt ->
+                try {
+                    val reply = aiRepository.chat(text)
+                    // успех — заменяем последнее сообщение об ошибке (если было) на ответ
+                    val msgs = _messages.value.toMutableList()
+                    // убираем предыдущее сообщение об ошибке AI (если оно последнее)
+                    if (msgs.isNotEmpty() && !msgs.last().isUser && msgs.last().text.startsWith("⚠️")) {
+                        msgs.removeAt(msgs.lastIndex)
+                    }
+                    msgs.add(UiMessage(text = reply.reply, isUser = false, actions = reply.actions))
+                    _messages.value = msgs
+                    lastError = null
+                    return@repeat
+                } catch (e: Exception) {
+                    lastError = e
+                    if (attempt < 2) kotlinx.coroutines.delay(2000L)
+                }
             }
+            if (lastError != null) {
+                _messages.value = _messages.value + UiMessage(
+                    text = "⚠️ Не удалось получить ответ. Попробуйте ещё раз.",
+                    isUser = false, actions = emptyList()
+                )
+            }
+            _isSending.value = false
         }
     }
 }

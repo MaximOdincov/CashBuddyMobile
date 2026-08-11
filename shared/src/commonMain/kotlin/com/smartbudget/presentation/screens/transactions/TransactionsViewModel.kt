@@ -16,11 +16,12 @@ class TransactionsViewModel(
     private val _state = MutableStateFlow<TransactionsState>(TransactionsState.Loading)
     val state: StateFlow<TransactionsState> = _state.asStateFlow()
 
-    init { load() }
+    // НЕ вызываем load() в init — categoryId задаётся вызывающим экраном.
+    // init { load() } грузил бы все транзакции (categoryId=null) и конкурировал с LaunchedEffect.
 
     fun load(categoryId: Long? = null) {
         viewModelScope.launch {
-            _state.value = TransactionsState.Loading
+            // НЕ сбрасываем в Loading при повторной загрузке — данные обновятся без мигания
             try {
                 _state.value = TransactionsState.Success(transactionRepository.list(categoryId = categoryId))
             } catch (e: Exception) {

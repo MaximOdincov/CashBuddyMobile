@@ -44,7 +44,7 @@ class BudgetViewModel(
         val target = month ?: _currentMonth.value
         _currentMonth.value = target
         viewModelScope.launch {
-            _state.value = BudgetState.Loading
+            // НЕ сбрасываем в Loading при повторной загрузке (fix мигания)
             try {
                 val overview = budgetRepository.overview(target)
                 _state.value = BudgetState.Success(overview)

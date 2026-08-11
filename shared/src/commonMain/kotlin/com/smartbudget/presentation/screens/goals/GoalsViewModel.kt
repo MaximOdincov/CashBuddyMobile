@@ -20,7 +20,7 @@ class GoalsViewModel(
 
     fun load() {
         viewModelScope.launch {
-            _state.value = GoalsState.Loading
+            // НЕ сбрасываем в Loading (fix мигания)
             try {
                 _state.value = GoalsState.Success(goalsRepository.list())
             } catch (e: Exception) {
